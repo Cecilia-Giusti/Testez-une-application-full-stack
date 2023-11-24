@@ -7,15 +7,19 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { SessionService } from 'src/app/services/session.service';
 
-import { MeComponent } from './me.component';
 import { UserService } from 'src/app/services/user.service';
 import { of } from 'rxjs';
 import { Router } from '@angular/router';
 
+//Import du composant à tester
+import { MeComponent } from './me.component';
+
 describe('MeComponent', () => {
+  // Déclareration des variables pour la fixture et le composant mocké.
   let component: MeComponent;
   let fixture: ComponentFixture<MeComponent>;
 
+  // Déclareration des mocks.
   let mockSessionService: {
     logOut: any;
     sessionInformation?: { id: number };
@@ -25,6 +29,7 @@ describe('MeComponent', () => {
   let mockRouter: { navigate: any };
 
   beforeEach(async () => {
+    // Création des mocks
     mockUserService = {
       getById: jest.fn().mockReturnValue(
         of({
@@ -44,6 +49,7 @@ describe('MeComponent', () => {
     mockMatSnackBar = { open: jest.fn() };
     mockRouter = { navigate: jest.fn() };
 
+    // Configuration de TestBed pour créer le mock du composant
     await TestBed.configureTestingModule({
       declarations: [MeComponent],
       imports: [
@@ -54,6 +60,8 @@ describe('MeComponent', () => {
         MatIconModule,
         MatInputModule,
       ],
+
+      //Création des instances de service et configuration des mocks
       providers: [
         { provide: SessionService, useValue: mockSessionService },
         { provide: Router, useValue: mockRouter },
@@ -62,6 +70,7 @@ describe('MeComponent', () => {
       ],
     }).compileComponents();
 
+    //Création d'une fixture pour obtenir l'instance du composant
     fixture = TestBed.createComponent(MeComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
