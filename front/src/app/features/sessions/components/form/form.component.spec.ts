@@ -129,7 +129,6 @@ describe('FormComponent', () => {
 
   it('should call create method for a new session', () => {
     component.onUpdate = false;
-
     component.submit();
 
     expect(sessionApiServiceMock.create).toHaveBeenCalled();
@@ -144,10 +143,17 @@ describe('FormComponent', () => {
   it('should call update method for an existing session', () => {
     component.onUpdate = true;
 
-    component['id'] = '1';
-
     component.submit();
 
     expect(sessionApiServiceMock.update).toHaveBeenCalled();
+  });
+
+  it('should handle submit when sessionForm is undefined', () => {
+    component.sessionForm = undefined;
+
+    component.submit();
+
+    expect(sessionApiServiceMock.create).toHaveBeenCalledWith(undefined);
+    expect(sessionApiServiceMock.update).not.toHaveBeenCalled();
   });
 });
