@@ -2,6 +2,7 @@ package com.openclassrooms.starterjwt.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openclassrooms.starterjwt.controllers.AuthController;
+import com.openclassrooms.starterjwt.models.User;
 import com.openclassrooms.starterjwt.payload.request.LoginRequest;
 import com.openclassrooms.starterjwt.payload.request.SignupRequest;
 import com.openclassrooms.starterjwt.repository.UserRepository;
@@ -21,10 +22,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.Optional;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -85,6 +90,48 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.token").value("mocked_jwt_token"));
     }
 
+    @Test
+    public void whenAuthenticateUser_andUserExists_thenReturnsJwtResponseWithAdminFlag() throws Exception {
+        // Données de requête
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setEmail("test@example.com");
+        loginRequest.setPassword("testPassword");
+        String jsonRequest = new ObjectMapper().writeValueAsString(loginRequest);
+
+        // Configuration du mock de UserDetails
+        UserDetailsImpl userDetails = UserDetailsImpl.builder()
+                .id(1L)
+                .username("user@example.com")
+                .firstName("Test")
+                .lastName("User")
+                .admin(false)
+                .password("password")
+                .build();
+
+        // Configuration du mock de Authentication
+        Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        given(authenticationManager.authenticate(any())).willReturn(authentication);
+
+        // Configuration du mock de JwtUtils
+        given(jwtUtils.generateJwtToken(authentication)).willReturn("mocked_jwt_token");
+
+        // Créer un utilisateur correspondant
+        User foundUser = new User();
+        foundUser.setEmail("user@example.com");
+
+
+        // Configurer userRepository pour retourner foundUser
+        given(userRepository.findByEmail("user@example.com")).willReturn(Optional.of(foundUser));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
+                .andExpect(status().isOk())
+                .andDo(print()) // Ajoutez ceci pour imprimer la réponse
+                .andExpect(jsonPath("$.token").value("mocked_jwt_token"));
+
+    }
+
 
     @Test
     public void whenRegisterUser_thenReturnsSuccessMessage() throws Exception {
@@ -108,5 +155,29 @@ public class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("User registered successfully!"));
     }
+
+    @Test
+    public void whenRegisterUser_withExistingEmail_thenReturnsBadRequest() throws Exception {
+        // Création de l'objet SignupRequest
+        SignupRequest signUpRequest = new SignupRequest();
+        signUpRequest.setEmail("existinguser@example.com");
+        signUpRequest.setPassword("password");
+        signUpRequest.setFirstName("FirstName");
+        signUpRequest.setLastName("LastName");
+
+        // Conversion en JSON
+        String jsonRequest = new ObjectMapper().writeValueAsString(signUpRequest);
+
+        // Configurer userRepository pour simuler un email déjà existant
+        given(userRepository.existsByEmail("existinguser@example.com")).willReturn(true);
+
+        // Exécution du test avec MockMvc
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Error: Email is already taken!"));
+    }
+
 }
 
