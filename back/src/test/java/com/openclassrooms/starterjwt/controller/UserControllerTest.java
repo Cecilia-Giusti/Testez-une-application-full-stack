@@ -7,22 +7,23 @@ import com.openclassrooms.starterjwt.models.User;
 import com.openclassrooms.starterjwt.services.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 
-import java.time.LocalDateTime;
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+class UserControllerTest {
 
-@ExtendWith(MockitoExtension.class)
-public class UserControllerTest {
+    @InjectMocks
+    private UserController userController;
 
     @Mock
     private UserService userService;
@@ -30,62 +31,110 @@ public class UserControllerTest {
     @Mock
     private UserMapper userMapper;
 
-    @InjectMocks
-    private UserController userController;
-
-    private MockMvc mockMvc;
+    @Mock
+    private SecurityContext securityContext;
 
     @BeforeEach
-    public void setup() {
-        mockMvc = MockMvcBuilders.standaloneSetup(userController).build();
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+        SecurityContextHolder.setContext(securityContext);
     }
 
     @Test
-    public void whenFindById_thenReturnsUserDto() throws Exception {
-        User mockUser = User.builder()
-                .id(1L)
-                .email("user@example.com")
-                .lastName("Doe")
-                .firstName("John")
-                .password("password")
-                .admin(false)
-                .createdAt(LocalDateTime.now().minusDays(10))
-                .updatedAt(LocalDateTime.now())
-                .build();
+    void findById_UserExists() {
+        // Configuration des mocks
+        Long userId = 1L;
+        User mockUser = new User();
+        UserDto mockUserDTO = new UserDto();
+        when(userService.findById(userId)).thenReturn(mockUser);
+        when(userMapper.toDto(mockUser)).thenReturn(mockUserDTO);
 
-        UserDto mockUserDto = new UserDto(
-                1L, "user@example.com", "Doe", "John", false, "password",
-                LocalDateTime.now().minusDays(10), LocalDateTime.now()
-        );
+        // Test
+        ResponseEntity<?> response = userController.findById(userId.toString());
 
-        when(userService.findById(1L)).thenReturn(mockUser);
-        when(userMapper.toDto(mockUser)).thenReturn(mockUserDto);
-
-        mockMvc.perform(get("/api/user/{id}", 1))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.email").value("user@example.com"))
-                .andExpect(jsonPath("$.lastName").value("Doe"))
-                .andExpect(jsonPath("$.firstName").value("John"));
+        // Vérifications
+        assertEquals(HttpStatus.OK, response.getStatusCode(), "La réponse devrait être OK");
+        assertEquals(mockUserDTO, response.getBody(), "Le corps de la réponse doit contenir le DTO de l'utilisateur");
     }
 
     @Test
-    public void whenFindById_withNonExistentUser_thenReturnsNotFound() throws Exception {
-        Long nonExistentUserId = 2L;
-        when(userService.findById(nonExistentUserId)).thenReturn(null);
+    void findById_UserNotFound() {
+        // Configurer UserService pour retourner null
+        when(userService.findById(anyLong())).thenReturn(null);
 
-        mockMvc.perform(get("/api/user/{id}", nonExistentUserId))
-                .andExpect(status().isNotFound());
+        // Test
+        ResponseEntity<?> response = userController.findById("1");
+
+        // Vérifier
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode(), "La réponse devrait être NOT_FOUND");
     }
 
     @Test
-    public void whenFindById_withInvalidIdFormat_thenReturnsBadRequest() throws Exception {
-        String invalidId = "abc";
+    void findById_InvalidUserIdFormat() {
+        // Test avec un ID non numérique
+        ResponseEntity<?> response = userController.findById("invalid-id");
 
-        mockMvc.perform(get("/api/user/{id}", invalidId))
-                .andExpect(status().isBadRequest());
+        // Vérifier
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode(), "La réponse devrait être BAD_REQUEST");
     }
 
+
+
+    @Test
+    void deleteUser_ExistingUser_Authorized() {
+        // Configuration des mocks
+        Long userId = 1L;
+        User mockUser = new User();
+        mockUser.setEmail("user@example.com");
+        when(userService.findById(userId)).thenReturn(mockUser);
+        UserDetails mockUserDetails = mock(UserDetails.class);
+        when(mockUserDetails.getUsername()).thenReturn("user@example.com");
+        when(securityContext.getAuthentication()).thenReturn(new UsernamePasswordAuthenticationToken(mockUserDetails, null));
+
+        // Test
+        ResponseEntity<?> response = userController.save(userId.toString());
+
+        // Vérifications
+        assertEquals(HttpStatus.OK, response.getStatusCode(), "La réponse devrait être OK");
+        verify(userService, times(1)).delete(userId);
+    }
+
+    @Test
+    void deleteUser_NonExistingUser() {
+        // Configurer UserService pour retourner null
+        when(userService.findById(anyLong())).thenReturn(null);
+
+        // Test
+        ResponseEntity<?> response = userController.save("1");
+
+        // Vérifier
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode(), "La réponse devrait être NOT_FOUND");
+    }
+
+    @Test
+    void deleteUser_UnauthorizedUser() {
+        // Configurer UserService et SecurityContext
+        User mockUser = new User();
+        mockUser.setEmail("user@example.com");
+        when(userService.findById(anyLong())).thenReturn(mockUser);
+        UserDetails mockUserDetails = mock(UserDetails.class);
+        when(mockUserDetails.getUsername()).thenReturn("other@example.com");
+        when(securityContext.getAuthentication()).thenReturn(new UsernamePasswordAuthenticationToken(mockUserDetails, null));
+
+        // Test
+        ResponseEntity<?> response = userController.save("1");
+
+        // Vérifier
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode(), "La réponse devrait être UNAUTHORIZED");
+    }
+
+    @Test
+    void deleteUser_InvalidUserIdFormat() {
+        // Test avec un ID non numérique
+        ResponseEntity<?> response = userController.save("invalid-id");
+
+        // Vérifier
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode(), "La réponse devrait être BAD_REQUEST");
+    }
 
 }
-
