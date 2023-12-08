@@ -43,6 +43,7 @@ jwt.secret= (secret code)
 4.  Run the following commands:
 
 **Back :** 
+
 1.Install dependencies :
 ```bash
 mvn install
@@ -53,6 +54,7 @@ java -jar app.jar
 ```
 
 **Front:** 
+
 1.Install dependencies :
 ```bash
 npm install
