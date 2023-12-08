@@ -16,6 +16,9 @@ import { Router } from '@angular/router';
 import { FormComponent } from './form.component';
 import { Session } from '../../interfaces/session.interface';
 import { of } from 'rxjs';
+import { Component } from '@angular/core';
+@Component({ template: '' })
+class DummyComponent {}
 
 describe('FormComponent', () => {
   let component: FormComponent;
@@ -59,6 +62,7 @@ describe('FormComponent', () => {
       imports: [
         RouterTestingModule.withRoutes([
           { path: 'update', component: FormComponent },
+          { path: 'sessions', component: DummyComponent },
         ]),
         HttpClientModule,
         MatCardModule,

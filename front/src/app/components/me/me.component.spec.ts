@@ -9,10 +9,13 @@ import { SessionService } from 'src/app/services/session.service';
 
 import { UserService } from 'src/app/services/user.service';
 import { of } from 'rxjs';
-import { Router } from '@angular/router';
 
 //Import du composant à tester
 import { MeComponent } from './me.component';
+import { Component, NgZone } from '@angular/core';
+import { RouterTestingModule } from '@angular/router/testing';
+@Component({ template: '' })
+class DummyComponent {}
 
 describe('MeComponent', () => {
   // Déclareration des variables pour la fixture et le composant mocké.
@@ -26,7 +29,6 @@ describe('MeComponent', () => {
   };
   let mockUserService: { delete: any; getById?: jest.Mock<any, any, any> };
   let mockMatSnackBar: { open: any };
-  let mockRouter: { navigate: any };
 
   beforeEach(async () => {
     // Création des mocks
@@ -47,7 +49,6 @@ describe('MeComponent', () => {
       logOut: jest.fn(),
     };
     mockMatSnackBar = { open: jest.fn() };
-    mockRouter = { navigate: jest.fn() };
 
     // Configuration de TestBed pour créer le mock du composant
     await TestBed.configureTestingModule({
@@ -59,12 +60,14 @@ describe('MeComponent', () => {
         MatFormFieldModule,
         MatIconModule,
         MatInputModule,
+        RouterTestingModule.withRoutes([
+          { path: '', component: DummyComponent },
+        ]),
       ],
 
       //Création des instances de service et configuration des mocks
       providers: [
         { provide: SessionService, useValue: mockSessionService },
-        { provide: Router, useValue: mockRouter },
         { provide: MatSnackBar, useValue: mockMatSnackBar },
         { provide: UserService, useValue: mockUserService },
       ],
@@ -99,7 +102,12 @@ describe('MeComponent', () => {
   });
 
   it('should call delete and perform actions on success', () => {
-    component.delete();
+    const spyRouter = jest.spyOn(component['router'], 'navigate');
+    const ngZone = TestBed.inject(NgZone);
+    ngZone.run(() => {
+      component.delete();
+    });
+
     expect(mockUserService.delete).toHaveBeenCalledWith('1');
     expect(mockMatSnackBar.open).toHaveBeenCalledWith(
       'Your account has been deleted !',
@@ -107,6 +115,6 @@ describe('MeComponent', () => {
       { duration: 3000 }
     );
     expect(mockSessionService.logOut).toHaveBeenCalled();
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/']);
+    expect(spyRouter).toHaveBeenCalledWith(['/']);
   });
 });

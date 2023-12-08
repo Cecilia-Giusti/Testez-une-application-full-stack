@@ -8,25 +8,31 @@ import { AppComponent } from './app.component';
 import { of } from 'rxjs';
 import { AuthService } from './features/auth/services/auth.service';
 import { SessionService } from './services/session.service';
-import { Router } from '@angular/router';
+import { Component, NgZone } from '@angular/core';
+
+@Component({ template: '' })
+class DummyComponent {}
 
 describe('AppComponent', () => {
   let component: AppComponent;
   let fixture: ComponentFixture<AppComponent>;
   let sessionServiceMock: { $isLogged: any; logOut: any };
-  let routerMock: { navigate: any };
 
   beforeEach(async () => {
     sessionServiceMock = { $isLogged: jest.fn(), logOut: jest.fn() };
-    routerMock = { navigate: jest.fn() };
 
     await TestBed.configureTestingModule({
-      imports: [RouterTestingModule, HttpClientModule, MatToolbarModule],
+      imports: [
+        RouterTestingModule.withRoutes([
+          { path: '', component: DummyComponent },
+        ]),
+        HttpClientModule,
+        MatToolbarModule,
+      ],
       declarations: [AppComponent],
       providers: [
         { provide: AuthService, useValue: {} },
         { provide: SessionService, useValue: sessionServiceMock },
-        { provide: Router, useValue: routerMock },
       ],
     }).compileComponents();
 
@@ -51,10 +57,14 @@ describe('AppComponent', () => {
   });
 
   it('should call logOut and navigate to home on logout', () => {
-    component.logout();
+    const spyRouter = jest.spyOn(component['router'], 'navigate');
+    const ngZone = TestBed.inject(NgZone);
+    ngZone.run(() => {
+      component.logout();
+    });
 
     expect(sessionServiceMock.logOut).toHaveBeenCalled();
 
-    expect(routerMock.navigate).toHaveBeenCalledWith(['']);
+    expect(spyRouter).toHaveBeenCalledWith(['']);
   });
 });

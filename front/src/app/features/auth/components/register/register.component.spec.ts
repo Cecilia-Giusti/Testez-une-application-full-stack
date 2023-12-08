@@ -7,23 +7,20 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { expect } from '@jest/globals';
-
 import { RegisterComponent } from './register.component';
 import { RegisterRequest } from '../../interfaces/registerRequest.interface';
 import { of, throwError } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
-import { Router } from '@angular/router';
+import { NgZone } from '@angular/core';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('RegisterComponent', () => {
   let component: RegisterComponent;
   let fixture: ComponentFixture<RegisterComponent>;
-
   let mockAuthService: { register: any };
-  let mockRouter: { navigate: any };
 
   beforeEach(async () => {
     mockAuthService = { register: jest.fn() };
-    mockRouter = { navigate: jest.fn() };
 
     await TestBed.configureTestingModule({
       declarations: [RegisterComponent],
@@ -35,10 +32,10 @@ describe('RegisterComponent', () => {
         MatFormFieldModule,
         MatIconModule,
         MatInputModule,
+        RouterTestingModule.withRoutes([{ path: 'login', redirectTo: '' }]),
       ],
       providers: [
         { provide: AuthService, useValue: mockAuthService },
-        { provide: Router, useValue: mockRouter },
         FormBuilder,
       ],
     }).compileComponents();
@@ -53,6 +50,7 @@ describe('RegisterComponent', () => {
   });
 
   it('should call register and handle success', () => {
+    const spyRouter = jest.spyOn(component['router'], 'navigate');
     const registerRequest: RegisterRequest = {
       email: 'test@example.com',
       firstName: 'test',
@@ -68,9 +66,13 @@ describe('RegisterComponent', () => {
       lastName: 'Testing',
       password: 'test!123',
     });
-    component.submit();
 
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
+    const ngZone = TestBed.inject(NgZone);
+    ngZone.run(() => {
+      component.submit();
+    });
+
+    expect(spyRouter).toHaveBeenCalledWith(['/login']);
   });
 
   it('should handle register error', () => {
