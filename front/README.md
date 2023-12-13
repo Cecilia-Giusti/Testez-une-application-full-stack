@@ -9,10 +9,6 @@ Testez-une-application-full-stack is a full-stack application testing project ut
 Make sure the following softs are installed
 
 - Angular CLI version 14.1.0.
-- Java JDK 17
-- Maven
-- MySQL >= 8
-
 
 ##  Run Locally
 
