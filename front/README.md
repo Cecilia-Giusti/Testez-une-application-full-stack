@@ -1,70 +1,62 @@
-# Yoga
+#  Testez-une-application-full-stack
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 14.1.0.
+Testez-une-application-full-stack is a full-stack application testing project utilizing essential dependencies like Spring Boot, MySQL, JJWT, Lombok, Mapstruct, JUnit, Maven, AssertJ, H2, and Mockito.
 
-## Start the project
+## ️ Settings
 
-Git clone:
+### Step 1 - Prerequistes :
 
-> git clone https://github.com/OpenClassrooms-Student-Center/P5-Full-Stack-testing
+Make sure the following softs are installed
 
-Go inside folder:
+- Angular CLI version 14.1.0.
+- Java JDK 17
+- Maven
+- MySQL >= 8
 
-> cd yoga
 
-Install dependencies:
+##  Run Locally
 
-> npm install
+### Instructions
 
-Launch Front-end:
+1.  Fork this repo
+2.  Clone the repo onto your computer
+3.  Open a terminal window in the cloned project
+4.  Run the following commands:
 
-> npm run start;
+**Front:** 
+1.Install dependencies :
+```bash
+npm install
+```
+2.Start application:
+```bash
+ng serve
+```
 
-## Ressources
+## Test
 
-### Mockoon env
+### Front	
 
-### Postman collection
+**Unitary and integration test :**
 
-For Postman import the collection
+Launch : 
+ ` npm run test`
 
-> ressources/postman/yoga.postman_collection.json
+for following change:
+` npm run test:watch `
 
-by following the documentation:
+Coverage : 
+` npm run test:coverage`
 
-https://learning.postman.com/docs/getting-started/importing-and-exporting-data/#importing-data-into-postman
+**End to end test  :**
 
-### MySQL
+Launch :
+`npm run e2e `
 
-SQL script for creating the schema is available `ressources/sql/script.sql`
-
-By default the admin account is:
-
-- login: yoga@studio.com
-- password: test!1234
-
-### Test
-
-#### E2E
-
-Launching e2e test:
-
-> npm run e2e
-
-Generate coverage report (you should launch e2e test before):
-
-> npm run e2e:coverage
+Coverage : 
+` npm run run e2e:coverage`
 
 Report is available here:
 
 > front/coverage/lcov-report/index.html
 
-#### Unitary test
-
-Launching test:
-
-> npm run test
-
-for following change:
-
-> npm run test:watch
