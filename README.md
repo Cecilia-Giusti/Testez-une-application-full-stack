@@ -89,6 +89,10 @@ for following change:
 Coverage : 
 ` npm run test:coverage`
 
+Report is available here:
+
+> front/coverage/jest/index.html
+
 **End to end test  :**
 
 Launch :
