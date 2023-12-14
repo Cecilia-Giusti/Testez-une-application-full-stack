@@ -1,5 +1,10 @@
 import { HttpClientModule } from '@angular/common/http';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import {
+  ComponentFixture,
+  TestBed,
+  fakeAsync,
+  tick,
+} from '@angular/core/testing';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -13,6 +18,8 @@ import { of, throwError } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { NgZone } from '@angular/core';
 import { RouterTestingModule } from '@angular/router/testing';
+import { Router } from '@angular/router';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 describe('RegisterComponent', () => {
   let component: RegisterComponent;
@@ -90,4 +97,70 @@ describe('RegisterComponent', () => {
 
     expect(component.onError).toBe(true);
   });
+});
+
+describe('RegisterComponent Integration Tests', () => {
+  let component: RegisterComponent;
+  let authService: AuthService;
+  let router: Router;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [RegisterComponent],
+      imports: [
+        HttpClientTestingModule,
+        ReactiveFormsModule,
+        MatCardModule,
+        MatFormFieldModule,
+        MatIconModule,
+        MatInputModule,
+        RouterTestingModule.withRoutes([]),
+      ],
+      providers: [AuthService, FormBuilder],
+    }).compileComponents();
+
+    authService = TestBed.inject(AuthService);
+    router = TestBed.inject(Router);
+    component = TestBed.createComponent(RegisterComponent).componentInstance;
+
+    jest
+      .spyOn(router, 'navigate')
+      .mockImplementation(() => Promise.resolve(true));
+  });
+
+  it('should navigate to login on successful registration', fakeAsync(() => {
+    jest.spyOn(authService, 'register').mockReturnValue(of(undefined));
+
+    component.form.setValue({
+      email: 'test@example.com',
+      firstName: 'John',
+      lastName: 'Doe',
+      password: 'password123',
+    });
+    component.submit();
+
+    tick();
+
+    expect(authService.register).toHaveBeenCalled();
+    expect(router.navigate).toHaveBeenCalledWith(['/login']);
+  }));
+
+  it('should set onError to true on registration error', fakeAsync(() => {
+    jest
+      .spyOn(authService, 'register')
+      .mockReturnValue(throwError(() => new Error('Registration failed')));
+
+    component.form.setValue({
+      email: 'test@example.com',
+      firstName: 'John',
+      lastName: 'Doe',
+      password: 'password123',
+    });
+    component.submit();
+
+    tick();
+
+    expect(authService.register).toHaveBeenCalled();
+    expect(component.onError).toBeTruthy();
+  }));
 });
